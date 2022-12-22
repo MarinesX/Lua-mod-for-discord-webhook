@@ -16,7 +16,7 @@ end
 -- Create an embed object
 function discordWebhook.createEmbed(data)
 
-    local embed = data or {} -- title, description, color, timestamp
+    local embed = data or {} -- Embed table: title, description, color, timestamp
 
     function embed.setImage(value)
         data.image = { url = value }
@@ -58,7 +58,7 @@ end
 
 -- Create the Body
 function discordWebhook.createBody(data)
-    data = data or {}   -- username, content, embed
+    data = data or {}   -- Body table: username, content, embed, [file]
     return data
 end
 
@@ -67,10 +67,17 @@ function discordWebhook.send(...)
     local webhookURL, Body, method
 
     if select('#', ...) == 1 then
-        -- If only one argument is provided, treat it as the webhookURL  
-        Body = {
-            content = select(1, ...)
-        }
+
+        -- If the only argument is type 'table', it must be Body table!
+        if type(select(1, ...)) == "table" then
+            Body = select(1, ...)
+        else
+
+            -- Else, the type is 'string' as messages inside content
+            Body = {
+                content = select(1, ...)
+            }
+        end
     else
         -- Otherwise, unpack the arguments as normal
         webhookURL, Body, method = table.unpack{...}
@@ -92,6 +99,8 @@ function discordWebhook.send(...)
 
     if Body.embed then
         local fieldArray = ""
+        local author = ""
+        local footer = ""
 
         if Body.embed.fields then
             for index, values in ipairs(Body.embed.fields) do
@@ -99,52 +108,83 @@ function discordWebhook.send(...)
             end
         end
 
+        if Body.embed.author then
+            for key, value in pairs(Body.embed.author) do
+                author = author..[[
+                    
+                ]]..key.." = '"..value..[['
+                ]]
+            end
+        end
+
+        if Body.embed.thumbnail then
+            thumbnail = [[
+                
+            url = ']]..Body.embed.thumbnail.url .. [['
+            ]]
+        end
+
+        if Body.embed.footer then
+            for key, value in pairs(Body.embed.footer) do
+                footer = footer..[[
+    
+                ]]..key..[[ = ']]..value..[['
+                ]]
+            end
+        end
+
+        if Body.embed.color then 
+            script = script..[[
+            $color = "]].. Body.embed.color ..[["
+            ]]
+        end
+
+        if Body.embed.title then 
+            script = script..[[
+            $title = "]]..Body.embed.title..[["
+            ]]
+        end
+
+        if Body.embed.description then 
+            script = script..[[
+            $description = "]]..Body.embed.description..[[" 
+            ]]
+        end
+
+        if Body.embed.timestamp then 
+            script = script..[[
+            $timestamp = ']].. Body.embed.timestamp ..[['
+            ]]
+        end
+
         script = script..[[ 
+            $author = @{]].. author ..[[}
+            
+            $thumbnail = @{]].. thumbnail ..[[}
+            
+            $footer = @{]]..footer..[[}
+            
+            $fieldArray = @(]].. fieldArray ..[[)
+            
+            $embedObject = @{
+                color = $color
+                title = $title
+                description = $description
+                timestamp = $timestamp
+                author = $author
+                thumbnail = $thumbnail
+                footer = $footer
+                fields = $fieldArray
+            }
+            
         $embedArray = New-Object System.Collections.Generic.List[Object]
-
-        $color = "]]..Body.embed.color..[["
-
-        $title = "**]]..Body.embed.title..[[**"
-
-        $description = "**]]..Body.embed.description..[[**"
-
-        $timestamp = "]]..Body.embed.timestamp..[["
-
-        $author = @{
-            name = "]].. Body.embed.author.name ..[["
-            icon_url = "]].. Body.embed.author.icon_url ..[["
-            url = "]].. Body.embed.author.url ..[["
-        }
-
-        $thumbnail = @{
-            url = "]].. Body.embed.thumbnail.url ..[["
-        }
-
-        $footer = @{
-            text = "]].. Body.embed.footer.text ..[["
-            icon_url = "]].. Body.embed.footer.icon_url ..[["
-        }
-
-        $fieldArray = @(]].. fieldArray ..[[)
-
-        $embedObject = @{
-            color = $color
-            title = $title
-            description = $description
-            timestamp = $timestamp
-            author = $author
-            thumbnail = $thumbnail
-            footer = $footer
-            fields = $fieldArray
-        }
-
         $embedArray.Add($embedObject)
 
         ]]
     end
 
     script = script..[[
-$payload = @{ 
+    $payload = @{ 
     ]]
 
     if Body.username then
@@ -193,9 +233,9 @@ Invoke-RestMethod -Uri $webHookUrl -Body ($payload | ConvertTo-Json -Depth 4) -M
         ]]
     end
 
-    -- local file = io.open("log.ps1", "w")
-    -- file:write(script)
-    -- file:close()
+    local file = io.open("log.ps1", "w")
+    file:write(script)
+    file:close()
 
     local pipe = io.popen("powershell -command -", "w")
     pipe:write(script)
