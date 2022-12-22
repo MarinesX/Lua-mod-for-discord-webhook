@@ -48,7 +48,7 @@ local payload = discord.createBody(<tableBody>) -- Initiate and assign return <t
     embed = embed
 }
 
-discord.send([url][, payload][, method<bool>]) -- eExample discord.send("webhookURL/messages_id", payload, true)
+discord.send([url][, payload][, method<bool>]) -- Example discord.send("webhookURL/messages_id", payload, true)
     -- method = true => send method Patch
     or
 discord.send("messages") -- Or sent via standard discord webhook link
