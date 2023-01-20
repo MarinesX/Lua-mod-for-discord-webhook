@@ -101,6 +101,7 @@ function discordWebhook.send(...)
         local fieldArray = ""
         local author = ""
         local footer = ""
+        local thumbnail = ""
 
         if Body.embed.fields then
             for index, values in ipairs(Body.embed.fields) do
@@ -157,29 +158,48 @@ function discordWebhook.send(...)
             ]]
         end
 
+        if thumbnail ~= "" then
+            script = script..[[ 
+                $thumbnail = @{]].. thumbnail ..[[}
+            ]]
+        end
+
         script = script..[[ 
-            $author = @{]].. author ..[[}
-            
-            $thumbnail = @{]].. thumbnail ..[[}
-            
+            $author = @{]].. author ..[[} 
             $footer = @{]]..footer..[[}
-            
             $fieldArray = @(]].. fieldArray ..[[)
-            
+        ]]
+
+        -- STARTI OF EMBED OBJECT
+        script = script..[[
             $embedObject = @{
                 color = $color
                 title = $title
                 description = $description
                 timestamp = $timestamp
-                author = $author
-                thumbnail = $thumbnail
                 footer = $footer
                 fields = $fieldArray
-            }
-            
+                author = $author
+        ]]
+
+        if thumbnail ~= "" then
+            script = script..[[ 
+                thumbnail = $thumbnail
+            ]]
+        end
+        
+        -- if author ~= "" then
+        --     script = script..[[ 
+        --         author = $author
+        --     ]]
+        -- end
+
+        -- END OF EMBED OBJECT!
+        script = script..[[
+        }
+                
         $embedArray = New-Object System.Collections.Generic.List[Object]
         $embedArray.Add($embedObject)
-
         ]]
     end
 
